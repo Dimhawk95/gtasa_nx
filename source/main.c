@@ -11,6 +11,7 @@
  * thread and only queues render commands, so the main thread needs no GL context.
  */
 
+#include "saltynx.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -463,6 +464,8 @@ void hard_exit(void) {
 }
 
 int main(void) {
+  saltynx_start();
+  atexit(saltynx_stop);
   // full clock for boot; dropped once the menu has rendered
   cpu_boost(1);
 

@@ -46,7 +46,6 @@ The port has a config file at `/switch/gtasa/gtasa_nx.cfg`, created on first run
 * `screen_width` / `screen_height` — render resolution; `-1` picks 1280x720 in
   handheld and 1920x1080 docked
 * `trilinear_filter` — `1` forces trilinear texture filtering
-* `show_fps` — `1` draws a small FPS counter in the top-left corner
 * `fps_cap_30` — `1` enables the wrapper's 30 FPS cap
 * `auto_boot_delay` — launcher countdown in seconds (`1`, `3`, `5`, or `10`)
 * `ps2_corona_rotation` — `1` PS2 Corona Sun
@@ -111,3 +110,8 @@ users to legally own the original game.
 
 Unless specified otherwise, the source code provided in this repository is
 licensed under the MIT License. Please see the accompanying LICENSE file.
+
+### SaltyNX telemetry
+
+FPS and render resolution are published to SaltyNX shared memory for compatible overlays. The port continues normally when SaltyNX is not running. This reports presentation timing and resolution; it does not change the game's frame cap.
+The old wrapper FPS overlay and its `show_fps` setting have been removed. Existing config entries are ignored; use a SaltyNX-compatible overlay to view FPS.

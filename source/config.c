@@ -17,7 +17,6 @@
   CONFIG_VAR_INT(screen_width); \
   CONFIG_VAR_INT(screen_height); \
   CONFIG_VAR_INT(trilinear_filter); \
-  CONFIG_VAR_INT(show_fps); \
   CONFIG_VAR_INT(fps_cap_30); \
   CONFIG_VAR_INT(auto_boot_delay); \
   CONFIG_VAR_INT(ps2_corona_rotation); \
@@ -53,7 +52,6 @@ int read_config(const char *file) {
   config.screen_width = -1; // auto
   config.screen_height = -1;
   config.trilinear_filter = 1;
-  config.show_fps = 0; // small FPS counter in the top left corner
   config.fps_cap_30 = 0;
   config.auto_boot_delay = 3;
   config.ps2_corona_rotation = 1; // PS2 corona rotation on by default

@@ -23,7 +23,7 @@
 #define PULSE_MAX_SCALE 1.08f
 #define STICK_THRESHOLD 16000
 #define STICK_DEADZONE 8000
-#define NUM_OPTION_ROWS 13
+#define NUM_OPTION_ROWS 12
 #define OPT_VISIBLE_ROWS 9
 
 typedef enum {
@@ -45,7 +45,6 @@ static const char *const option_labels[NUM_OPTION_ROWS] = {
   "TRILINEAR FILTER",
   "MOBILE WIDGETS",
   "FUZZY SEEK",
-  "FPS COUNTER",
   "30 FPS CAP",
 };
 
@@ -61,8 +60,7 @@ static int *option_value(int row) {
   case 8: return &config.trilinear_filter;
   case 9: return &config.mobile_widgets;
   case 10: return &config.fuzzy_seek;
-  case 11: return &config.show_fps;
-  case 12: return &config.fps_cap_30;
+  case 11: return &config.fps_cap_30;
   default: return NULL;
   }
 }

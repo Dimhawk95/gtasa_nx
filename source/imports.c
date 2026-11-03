@@ -50,7 +50,6 @@
 #include "so_util.h"
 #include "util.h"
 #include "libc_shim.h"
-#include "overlay.h"
 
 extern uintptr_t __cxa_atexit;
 
@@ -106,7 +105,7 @@ static struct {
 
 // Invalidate the cache. Called on every real eglMakeCurrent (context ownership
 // transfer) and once per frame from eglSwapBuffers_cache (so the wrapper's own
-// direct GL -- movie player, FPS overlay -- can't leave the cache stale).
+// direct GL calls cannot leave the cache stale).
 static void gl_state_cache_reset(void) {
   glc_ncaps = 0;
   memset(&glc, 0, sizeof(glc));
@@ -203,15 +202,10 @@ static void glDeleteProgram_c(GLuint p) {
   glDeleteProgram(p);
 }
 
-// Frame boundary: invalidate the state cache once per frame, then run the real
-// swap hook. The wrapper's own direct GL there (movie player / FPS overlay) goes
-// around the cache, so this keeps the game's next frame from trusting a stale
-// entry. Kept in this TU so no cross-file symbol is needed. eglSwapBuffersHook is
-// defined in movie_player.c (already referenced by the import table below).
-extern unsigned int eglSwapBuffersHook(void *display, void *surface);
+// Invalidate the GL state cache at each presentation boundary.
 static unsigned int eglSwapBuffers_cache(void *display, void *surface) {
   gl_state_cache_reset();
-  return eglSwapBuffersHook(display, surface);
+  return eglSwapBuffers((EGLDisplay)display, (EGLSurface)surface);
 }
 
 static EGLBoolean eglMakeCurrent_dedup(EGLDisplay dpy, EGLSurface draw,
@@ -708,7 +702,7 @@ DynLibFunction dynlib_functions[] = {
   { "eglDestroySurface", (uintptr_t)&eglDestroySurface },
   { "eglDestroyContext", (uintptr_t)&eglDestroyContext },
   { "eglMakeCurrent", (uintptr_t)&eglMakeCurrent_dedup },
-  // reset the GL cache after the overlay's direct GL, then run the (FPS) swap hook
+  // reset the GL state cache at the frame boundary
   { "eglSwapBuffers", (uintptr_t)&eglSwapBuffers_cache },
   { "eglSwapInterval", (uintptr_t)&eglSwapInterval },
   { "eglGetError", (uintptr_t)&eglGetError },

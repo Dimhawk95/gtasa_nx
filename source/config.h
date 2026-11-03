@@ -39,7 +39,6 @@ typedef struct {
   int screen_width;
   int screen_height;
   int trilinear_filter;
-  int show_fps;
   int fps_cap_30;
   int auto_boot_delay;
   // PS2-style rendering (SkyGFX-derived) toggles. Each 1 = on, 0 = off.
