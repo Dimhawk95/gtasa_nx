@@ -13,6 +13,8 @@
 
 #include "saltynx.h"
 #include <stdlib.h>
+#include <ctype.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -374,18 +376,94 @@ static u64 pad_prev = 0;
 // Cheat entry: open the Switch on-screen keyboard and feed the typed code to the
 // game's CCheat via cheats_enqueue (hooks/game.c). Blocks the main loop while the
 // keyboard is up (the render thread keeps presenting the last frame).
+// Optional quick-cheat list: /switch/gtasa/cheats.txt, one entry per line:
+//   Name|CODE            or   Name|CODE|alias
+// '#' lines are ignored. Typing an alias, a name (or part of it, 3+ letters) or
+// the line number picks the entry; anything else is sent as a raw cheat code.
+// Returns 1 and fills `code` when an entry matched.
+static int cheat_list_lookup(const char *query, char *code, size_t code_sz) {
+  FILE *f = fopen("cheats.txt", "r");
+  if (!f)
+    return 0;
+  char q[64];
+  size_t ql = 0;
+  for (; query[ql] && ql < sizeof(q) - 1; ql++)
+    q[ql] = (char)tolower((unsigned char)query[ql]);
+  q[ql] = 0;
+  int all_digits = ql > 0;
+  for (size_t i = 0; i < ql; i++)
+    if (q[i] < '0' || q[i] > '9')
+      all_digits = 0;
+  const int want_num = all_digits ? atoi(q) : 0;
+
+  char line[256], first_sub[64] = { 0 };
+  int found = 0, entry = 0;
+  while (fgets(line, sizeof(line), f)) {
+    line[strcspn(line, "\r\n")] = 0;
+    if (!line[0] || line[0] == '#')
+      continue;
+    char *name = line;
+    char *c1 = strchr(name, '|');
+    if (!c1)
+      continue;
+    *c1++ = 0;
+    char *alias = strchr(c1, '|');
+    if (alias)
+      *alias++ = 0;
+    entry++;
+    char lname[128];
+    size_t n = 0;
+    for (; name[n] && n < sizeof(lname) - 1; n++)
+      lname[n] = (char)tolower((unsigned char)name[n]);
+    lname[n] = 0;
+    int exact = 0;
+    if (alias) {
+      char la[64];
+      size_t m = 0;
+      for (; alias[m] && m < sizeof(la) - 1; m++)
+        la[m] = (char)tolower((unsigned char)alias[m]);
+      la[m] = 0;
+      exact = (strcmp(la, q) == 0);
+    }
+    if (!exact && strcmp(lname, q) == 0)
+      exact = 1;
+    if (!exact && all_digits && entry == want_num)
+      exact = 1;
+    if (exact) {
+      snprintf(code, code_sz, "%s", c1);
+      fclose(f);
+      return 1;
+    }
+    if (!found && !all_digits && ql >= 3 && strstr(lname, q)) {
+      snprintf(first_sub, sizeof(first_sub), "%s", c1);
+      found = 1;
+    }
+  }
+  fclose(f);
+  if (found) {
+    snprintf(code, code_sz, "%s", first_sub);
+    return 1;
+  }
+  return 0;
+}
+
 static void open_cheat_keyboard(void) {
   SwkbdConfig kbd;
   if (R_FAILED(swkbdCreate(&kbd, 0)))
     return;
   swkbdConfigMakePresetDefault(&kbd);
-  swkbdConfigSetHeaderText(&kbd, "Enter cheat code");
+  swkbdConfigSetHeaderText(&kbd, "Enter cheat code or name");
   swkbdConfigSetStringLenMax(&kbd, 63);
   char out[64] = { 0 };
   Result rc = swkbdShow(&kbd, out, sizeof(out));
   swkbdClose(&kbd);
-  if (R_SUCCEEDED(rc) && out[0])
-    cheats_enqueue(out);
+  if (R_SUCCEEDED(rc) && out[0]) {
+    char code[64];
+    if (cheat_list_lookup(out, code, sizeof(code)))
+      cheats_enqueue(code);
+    else
+      cheats_enqueue(out);
+  }
 }
 
 static void update_gamepad(void) {
